@@ -1,0 +1,15 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Python: Launch pbl.py",
+      "type": "python",
+      "request": "launch",
+      "program": "${workspaceFolder}/pbl.py",
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}",
+      "justMyCode": true,
+      "args": []
+    }
+  ]
+}
