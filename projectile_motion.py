@@ -197,7 +197,7 @@ def sistema_rohrbach(t, y):
     # 1. Calcular Presiones (Ec. 9 y 10)
     
     # Presión en el Tanque (Depósito)
-    P = PVdW(T, N, (V0*10**-3), R, b, a) #[Pa] **
+    P = PVdW(T, N, V0, R, b, a) #[Pa] **
 
     # Volumen en el Cañón (Barril)
     Vb = A * (d + x) #m^3
@@ -258,27 +258,26 @@ def simulacion_rohrbach(P0):
 ###############################################################################################################
     '''con vdw'''
     
-    #N(0): Moléculas iniciales en el tanque (Ec. 9) **
-    v0 = VvdW(T, P0, b, R, a) #[m**3/mol] **
-    N0 = (V0 * 10**-3)/(v0) 
+#     #N(0): Moléculas iniciales en el tanque (Ec. 9) **
+#     v0 = VvdW(T, P0, b, R, a) #[m**3/mol] **
+#     N0 = V0/(v0) 
 
 
 
-# # Nb(0): Moléculas iniciales en el cañón (asumido a P_atm y volumen inicial A*d) **
-    vb0 = VvdW(T, P_atm, b, R, a) #[m**3/mol] **
-    Nb0 = (A * d) / vb0
+# # # Nb(0): Moléculas iniciales en el cañón (asumido a P_atm y volumen inicial A*d) **
+#     vb0 = VvdW(T, P_atm, b, R, a) #[m**3/mol] **
+#     Nb0 = (A * d) / vb0
 
 
 ###############################################################################################################
 
     ''' con ideal gas'''
 
+    # N(0): Moléculas iniciales en el tanque (Ec. 9)
+    N0 = P0 * V0 / (kB * T)
 
-    # # N(0): Moléculas iniciales en el tanque (Ec. 9)
-    # N0 = (P0 * (V0*10**-3)) / (kB * T)
-
-    # # Nb(0): Moléculas iniciales en el cañón (asumido a P_atm y volumen inicial A*d)
-    # Nb0 = (P_atm * A * d) / (kB * T)
+    # Nb(0): Moléculas iniciales en el cañón (asumido a P_atm y volumen inicial A*d)
+    Nb0 = (P_atm * A * d) / (kB * T)
 
 
 ###############################################################################################################
