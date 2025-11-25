@@ -202,29 +202,29 @@ def velocity(h, D, kmu, dragCoefficients: list[float], g, vs: list[float], m):
 #         return 0.0
 
 
-# def P0(v_deseada, P_min, P_max, V0, d, L, A, T, P_atm, r_max, Cv, Gg, Z, B, f, m, b, R, a, tolerancia_v=0.1):
-#     # """
-#     # Encuentra la presión inicial P0 (en kPa) necesaria para alcanzar v_deseada (m/s)
-#     # utilizando el método de la Bisección.
-#     # """
-#     # Definir la función de error (el objetivo es que sea cero)
-#     def funcion_error(P0_kPa):
-#         v_predicha = simulacion_rohrbach(P0_kPa, V0, d, L, A, T, P_atm, r_max, Cv, Gg, Z, B, f, m, b, R, a)
-#         return v_predicha - v_deseada
+def P0(v_deseada, P_min, P_max, V0, d, L, A, T, P_atm, r_max, Cv, Gg, Z, B, f, m, b, R, a, tolerancia_v=0.1):
+    # """
+    # Encuentra la presión inicial P0 (en kPa) necesaria para alcanzar v_deseada (m/s)
+    # utilizando el método de la Bisección.
+    # """
+    # Definir la función de error (el objetivo es que sea cero)
+    def funcion_error(P0_kPa):
+        v_predicha = simulacion_rohrbach(P0_kPa, V0, d, L, A, T, P_atm, r_max, Cv, Gg, Z, B, f, m, b, R, a)
+        return v_predicha - v_deseada
 
-#     # Se verifica que el intervalo [P_min, P_max] encierra la raíz
-#     if funcion_error(P_min) * funcion_error(P_max) > 0:
-#         # Se necesita un intervalo que contenga la solución
-#         print(f"Error: La velocidad deseada {v_deseada:.1f} m/s no está contenida")
-#         print(f"en el rango de presiones iniciales [{P_min}, {P_max}] kPa.")
-#         print("Ajuste P_min o P_max para continuar.")
-#         return None
+    # Se verifica que el intervalo [P_min, P_max] encierra la raíz
+    if funcion_error(P_min) * funcion_error(P_max) > 0:
+        # Se necesita un intervalo que contenga la solución
+        print(f"Error: La velocidad deseada {v_deseada:.1f} m/s no está contenida")
+        print(f"en el rango de presiones iniciales [{P_min}, {P_max}] kPa.")
+        print("Ajuste P_min o P_max para continuar.")
+        return None
 
-#     # Usar el método de bisección para encontrar la raíz (P0)
-#     P0calc = bisect(funcion_error, P_min, P_max, xtol=0.01)
+    # Usar el método de bisección para encontrar la raíz (P0)
+    P0calc = bisect(funcion_error, P_min, P_max, xtol=0.01)
 
 
-#     return P0calc
+    return P0calc
 
 
 
@@ -232,60 +232,60 @@ def velocity(h, D, kmu, dragCoefficients: list[float], g, vs: list[float], m):
 
 # ##########################
 # #main
-# def pressure(h, Dc, kmu, dragCoefficients, g, vs, m, P_min, P_max, V0, d, L, A, T, P_atm, r_max, Cv, Gg, Z, B, f, b, R, a):
-#   magicTuple = velocity(h, Dc, kmu, dragCoefficients, g, vs, m), # devuelve la velocidad necesaria para alcanzar h
-#   Pcalc = P0(magicTuple[0], P_min, P_max, V0, d, L, A, T, P_atm, r_max, Cv, Gg, Z, B, f, m, b, R, a)
-#   print(f"Objetivo: Encontrar P0 para alcanzar {magicTuple[0]} m/s")
+def pressure(h, Dc, kmu, dragCoefficients, g, vs, m, P_min, P_max, V0, d, L, A, T, P_atm, r_max, Cv, Gg, Z, B, f, b, R, a):
+  magicTuple = velocity(h, Dc, kmu, dragCoefficients, g, vs, m), # devuelve la velocidad necesaria para alcanzar h
+  Pcalc = P0(magicTuple[0], P_min, P_max, V0, d, L, A, T, P_atm, r_max, Cv, Gg, Z, B, f, m, b, R, a)
+  print(f"Objetivo: Encontrar P0 para alcanzar {magicTuple[0]} m/s")
 
-#   P0_calculada = P0(magicTuple[0])
+  P0_calculada = P0(magicTuple[0])
 
-#   if P0_calculada is not None:
-#   # Verificación final de la simulación
-#     v_verificacion = simulacion_rohrbach(P0_calculada)
-#     print("-" * 50)
-#     print("RESULTADOS DEL MODELO INVERSO DE ROHRBACH:") 
-#     print(f"Velocidad Deseada: {magicTuple[0]:.2f} m/s")
-#     print(f"Presión Inicial Requerida (P0): {P0_calculada:.2f} Pa")
-#     print(f"Verificación de Velocidad (con P0 calculada): {v_verificacion:.2f} m/s")
-#     print("-" * 50)
+  if P0_calculada is not None:
+  # Verificación final de la simulación
+    v_verificacion = simulacion_rohrbach(P0_calculada)
+    print("-" * 50)
+    print("RESULTADOS DEL MODELO INVERSO DE ROHRBACH:") 
+    print(f"Velocidad Deseada: {magicTuple[0]:.2f} m/s")
+    print(f"Presión Inicial Requerida (P0): {P0_calculada:.2f} Pa")
+    print(f"Verificación de Velocidad (con P0 calculada): {v_verificacion:.2f} m/s")
+    print("-" * 50)
 
 
 
 # def main():
-#   h = 60
-#   # """Conditions"""
-#   R = 8.3145 #Pam**3/molK
-#   # m = 0.01940        # Masa del proyectil (kg) [cite: 160]
-#   m = 130 / 1000       # corre el codigo con diametro real y masa real, pero aumento de rango de presiones (y estan dando muy altas)
-#   g = 9.8 #m/s**2
-#   # L = 0.8825         # Longitud del cañón para la aceleración (m) [cite: 164]
-#   L = 46/100 # nuestro -> corre, pero aumento bastante nuestra presion. 
-#   # V0 = 0.004196     # Volumen del depósito (m^3) [cite: 108]
-#   V0 = 0.0067 # nuestro
-#   # D = 0.01913        # Diámetro del cañón (m) [cite: 109] (del articulo)
-#   Dc = 0.0762 # ya no da el codigo para esas presiones -> y no cambia con el aumento del rango de presiones
-#   P_atm = 101325*0.89  # Presión atmosférica (Pa)
+  h = 60
+  # """Conditions"""
+  R = 8.3145 #Pam**3/molK
+  # m = 0.01940        # Masa del proyectil (kg) [cite: 160]
+  m = 130 / 1000       # corre el codigo con diametro real y masa real, pero aumento de rango de presiones (y estan dando muy altas)
+  g = 9.8 #m/s**2
+  # L = 0.8825         # Longitud del cañón para la aceleración (m) [cite: 164]
+  L = 46/100 # nuestro -> corre, pero aumento bastante nuestra presion. 
+  # V0 = 0.004196     # Volumen del depósito (m^3) [cite: 108]
+  V0 = 0.0067 # nuestro
+  # D = 0.01913        # Diámetro del cañón (m) [cite: 109] (del articulo)
+  Dc = 0.0762 # ya no da el codigo para esas presiones -> y no cambia con el aumento del rango de presiones
+  P_atm = 101325*0.89  # Presión atmosférica (Pa)
 
 
-#   """Van der Waals"""
-#   Tc = 132.63 #K
-#   Pc = 37.858 #bar
-#   a = (27*R**2*Tc**2)/(64*Pc*10**5)
-#   b = (1*R*Tc)/(8*Pc)
-#   Vtanque = 1/1000 #m**3
-#   Ttanque = 298.15 #K
+  """Van der Waals"""
+  Tc = 132.63 #K
+  Pc = 37.858 #bar
+  a = (27*R**2*Tc**2)/(64*Pc*10**5)
+  b = (1*R*Tc)/(8*Pc*10**5)
+  Vtanque = 1/1000 #m**3
+  Ttanque = 298.15 #K
 
-#   """Kinematic Viscocity"""
-#   T = 298.15 #K
-#   #asumiremos T cst y ambiente o la medimos ese dia
-#   Mw = 29 / 1000 # kg/mol
-#   #L: longitud caracteristica = D
-#   #kinematic viscosity
-#   T = T * 9/5
-#   To = 518.7 #R
-#   mo = 3.62 * 10**-7 #lbs/ft**2
-#   vs = VvdW(T, P_atm, b, R, a)
-#   kmu = ((mo * ((T/To)**(1.5)*(To + 198.72)/(T + 198.72))) * (6894.76) * vs / Mw) #m**2/s
+  """Kinematic Viscocity"""
+  T = 298.15 #K
+  #asumiremos T cst y ambiente o la medimos ese dia
+  Mw = 29 / 1000 # kg/mol
+  #L: longitud caracteristica = D
+  #kinematic viscosity
+  T = T * 9/5
+  To = 518.7 #R
+  mo = 3.62 * 10**-7 #lbs/ft**2
+  vs = VvdW(T, P_atm, b, R, a)
+  kmu = ((mo * ((T/To)**(1.5)*(To + 198.72)/(T + 198.72))) * (6894.76) * vs / Mw) #m**2/s
 
 #   '''Rohrbach'''
 #   # Parámetros Universales y del Gas (Sistema Internacional: SI)
@@ -305,14 +305,14 @@ def velocity(h, D, kmu, dragCoefficients: list[float], g, vs: list[float], m):
 #   Cv = 480 #From Engineering tool box
 #   # Cv = 4.392*10**-6 #m^3/pa*s #-> con este, el resultado que antes daba ya no da
 
-#   # Definir un rango de búsqueda (Presiones en kPa)
-#   # Basado en la gráfica Fig. 3(a), la solución debería estar entre 400 y 600 kPa
-#   P_min = 150 * 10**3
-#   P_max = 800 * 10**3
+  # Definir un rango de búsqueda (Presiones en kPa)
+  # Basado en la gráfica Fig. 3(a), la solución debería estar entre 400 y 600 kPa
+  P_min = 150 * 10**3
+  P_max = 800 * 10**3
 
-#   dragCoefficients = []
-#   h = 60
-#   pressure(h, Dc, kmu, dragCoefficients, g, vs, m, P_min, P_max, V0, d, L, A, T, P_atm, r_max, Cv, Gg, Z, B, f, b, R, a)
+  dragCoefficients = []
+  h = 60
+  pressure(h, Dc, kmu, dragCoefficients, g, vs, m, P_min, P_max, V0, d, L, A, T, P_atm, r_max, Cv, Gg, Z, B, f, b, R, a)
 
 # main()
 
