@@ -189,17 +189,40 @@ def sistema_rohrbach(t, y):
     y = [x, v, N, Nb]
     """
     x, v, N, Nb = y
+
+    
+###############################################################################################################
+    '''con vdw'''
     
     # 1. Calcular Presiones (Ec. 9 y 10)
     
     # Presión en el Tanque (Depósito)
-    P = PVdW(T, N, V0, R, b, a) #[Pa] **
+    P = PVdW(T, N, (V0*10**-3), R, b, a) #[Pa] **
 
     # Volumen en el Cañón (Barril)
-    Vb = A * (d + x)
+    Vb = A * (d + x) #m^3
     
     # Presión en el Cañón (Barril)
     Pb = PVdW(T, Nb, Vb, R, b, a) #[Pa] **
+
+    
+###############################################################################################################
+
+    '''con ideal gas'''
+
+    # # 1. Calcular Presiones (Ec. 9 y 10)
+
+    # # Presión en el Tanque (Depósito)
+    # P = (N * kB * T) / V0
+
+    # # Volumen en el Cañón (Barril)
+    # Vb = A * (d + x)
+
+    # # Presión en el Cañón (Barril)
+    # Pb = (Nb * kB * T) / Vb
+
+
+###############################################################################################################
     
     # 2. Calcular Flujo Q (dN/dt)
     Q = calcular_flujo_Q(P, Pb, r_max, Cv, T, Gg, Z, B)
@@ -231,17 +254,34 @@ def simulacion_rohrbach(P0):
     """
     Ejecuta el modelo de Rohrbach para una presión inicial P0 y retorna la velocidad de salida.
     """
-    
+
+###############################################################################################################
+    '''con vdw'''
     
     #N(0): Moléculas iniciales en el tanque (Ec. 9) **
     v0 = VvdW(T, P0, b, R, a) #[m**3/mol] **
-    N0 = V0/(v0) 
+    N0 = (V0 * 10**-3)/(v0) 
 
 
 
 # # Nb(0): Moléculas iniciales en el cañón (asumido a P_atm y volumen inicial A*d) **
     vb0 = VvdW(T, P_atm, b, R, a) #[m**3/mol] **
     Nb0 = (A * d) / vb0
+
+
+###############################################################################################################
+
+    ''' con ideal gas'''
+
+
+    # # N(0): Moléculas iniciales en el tanque (Ec. 9)
+    # N0 = (P0 * (V0*10**-3)) / (kB * T)
+
+    # # Nb(0): Moléculas iniciales en el cañón (asumido a P_atm y volumen inicial A*d)
+    # Nb0 = (P_atm * A * d) / (kB * T)
+
+
+###############################################################################################################
 
     
     # Vector de estado inicial: y0 = [x0, v0, N0, Nb0]
@@ -304,7 +344,7 @@ def busqueda_presion_inversa(v_deseada, P_min, P_max, tolerancia_v=0.1):
 # --- 6. Ejemplo de Uso ---
 
 # EJEMPLO: Quiero que el proyectil alcance 85 m/s.
-v_objetivo = 100 # m/s (aproximadamente 300 pies/s)
+v_objetivo = 44.7 # m/s (aproximadamente 300 pies/s)
 
 # Definir un rango de búsqueda (Presiones en kPa)
 # Basado en la gráfica Fig. 3(a), la solución debería estar entre 400 y 600 kPa
