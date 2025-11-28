@@ -8,7 +8,7 @@ h = 60 #m
 # """Conditions"""
 R = 8.3145 #Pam**3/molK
 # m = 0.01940        # Masa del proyectil (kg) [cite: 160]
-m = (67 + 52)/1000 #kg
+m = (92)/1000 #kg (falta incluir peso de cinta adhesiva, y botella tapa de paracaidas) ****
 g = 9.8 #m/s**2
 P_atm = 101325*0.89  # Presión atmosférica (Pa)
 
@@ -61,7 +61,7 @@ mo = 18.27* 10**-6 #Pa*s
 vs = VvdW(T, P_atm, b, R, a)
 kmu = (mo * (((T/To)**(1.5))*((To + 120)/(T + 120)))) * (vs / Mw) #m**2/s #dynamic viscosity/density (vs= density^-1)
 
-D = 7/100 #m
+D = 7/100 #m (en realidad es otro el diametro, ahora lo mido) ****
 dragCoefficients: list[float] = []
 
 
@@ -97,12 +97,23 @@ def terminalVelocity(dragCoefficients: list[float], m, g, vs, D):
     
     Returns:
       vt (float): Terminal Velocity [m/s]'''
-#   Cp = sum(dragCoefficients)/len(dragCoefficients) #con este no, no se porque, pero bueno, lueo lo resuelvo. 
-  Cp = 0.5 #funciona con este, da resultados logicos
+  Cp = sum(dragCoefficients)/len(dragCoefficients) #con este no, no se porque, pero bueno, lueo lo resuelvo. 
+#   Cp = 0.5 #funciona con este, da resultados logicos
   return (2*m*g*vs/(Cp*Mw*(D/2)**2*np.pi))**0.5
 
 # The function
 def velocity(h, D, kmu, dragCoefficients: list[float], g, vs, m):
+    ''' Velocity Calculator
+    Args:
+        h (float): Height [m]
+        D (float): Diameter [m]
+        kmu (float): Kinematic Viscosity [m**2/s]
+        dragCoefficients (list): List to append drag coefficients
+        g (float): Gravitational acceleration [m/s**2]
+        vs (float): Specific volume [m**3/mol]
+        m (float): Mass of the projectile [kg]
+    Returns:
+        vo (float): Initial Velocity [m/s]'''
     vo = 20 #m/s
     dragCoefficient(vo, D, kmu, dragCoefficients)
     vt = terminalVelocity(dragCoefficients, m, g, vs, D)
