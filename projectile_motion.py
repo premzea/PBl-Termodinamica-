@@ -4,7 +4,7 @@ from scipy.integrate import solve_ivp
 import matplotlib.pyplot as plt
 from scipy.optimize import bisect
 
-h = 60 #m
+h = 52 #m
 # """Conditions"""
 R = 8.3145 #Pam**3/molK
 # m = 0.01940        # Masa del proyectil (kg) [cite: 160]
@@ -54,8 +54,8 @@ def PVdW(T: float, N: float, V: float, R: float, b: float, a: float) -> float:
 T = 298.15 #K
 '''asumiremos T cst y ambiente o la medimos ese dia'''
 Mw= 29/1000 # kg/mol 
-'''L: longitud caracteristica = D'''
-'''kinematic viscosity'''
+# # '''L: longitud caracteristica = D'''
+# # '''kinematic viscosity'''
 To = 291.15 #K
 mo = 18.27* 10**-6 #Pa*s
 vs = VvdW(T, P_atm, b, R, a)
@@ -97,8 +97,7 @@ def terminalVelocity(dragCoefficients: list[float], m, g, vs, D):
     
     Returns:
       vt (float): Terminal Velocity [m/s]'''
-  Cp = sum(dragCoefficients)/len(dragCoefficients) #con este no, no se porque, pero bueno, lueo lo resuelvo. 
-#   Cp = 0.5 #funciona con este, da resultados logicos
+  Cp = sum(dragCoefficients)/len(dragCoefficients) 
   return (2*m*g*vs/(Cp*Mw*(D/2)**2*np.pi))**0.5
 
 # The function
@@ -130,20 +129,16 @@ def velocity(h, D, kmu, dragCoefficients: list[float], g, vs, m):
 velocity(h, D, kmu, dragCoefficients, g, vs, m)
 
 
-# ############################################################################################################################################################################################################################################################################
-# #Area del Paracaidas
-
+############################################################################################################################################################################################################################################################################
+'''Radius Calculator Parachute'''
 # vc = 4 # velocidad en la caida[m/s]
-# Ap = (2*m*g*vs)/(Mw*0.5*vc**2) #m^2
+# Cp = sum(dragCoefficients)/len(dragCoefficients) 
+# Ap = (2*m*g*vs)/(Mw*Cp*vc**2) #m^2
 # r = ((Ap/np.pi)**0.5) #m
 # print('radius = ' + str(r) + ' m')
 
-# #meta: poder usar nuestro propio coeficiente de arrastre
-
 ##############################################################################################################################################################################################################################
-
-
-# --- 1. Definición de Constantes y Parámetros del Cañón ---
+'''Rohrbach Model'''
 
 # Parámetros Universales y del Gas (Sistema Internacional: SI)
 kB = 1.380649e-23  # Constante de Boltzmann (J/K)
@@ -202,38 +197,38 @@ def sistema_rohrbach(t, y):
     x, v, N, Nb = y
 
     
-###############################################################################################################
+#///////////////////////////////////////////////////////////////////////////////////////
     '''con vdw'''
     
-    # 1. Calcular Presiones (Ec. 9 y 10)
+    # # 1. Calcular Presiones (Ec. 9 y 10)
     
-    # Presión en el Tanque (Depósito)
-    P = PVdW(T, N, V0, R, b, a) #[Pa] **
+    # # Presión en el Tanque (Depósito)
+    # P = PVdW(T, N, V0, R, b, a) #[Pa] **
 
-    # Volumen en el Cañón (Barril)
-    Vb = A * (d + x) #m^3
+    # # Volumen en el Cañón (Barril)
+    # Vb = A * (d + x) #m^3
     
-    # Presión en el Cañón (Barril)
-    Pb = PVdW(T, Nb, Vb, R, b, a) #[Pa] **
+    # # Presión en el Cañón (Barril)
+    # Pb = PVdW(T, Nb, Vb, R, b, a) #[Pa] **
 
     
-###############################################################################################################
+#///////////////////////////////////////////////////////////////////////////////////////
 
     '''con ideal gas'''
 
-    # # 1. Calcular Presiones (Ec. 9 y 10)
+    # 1. Calcular Presiones (Ec. 9 y 10)
 
-    # # Presión en el Tanque (Depósito)
-    # P = (N * kB * T) / V0
+    # Presión en el Tanque (Depósito)
+    P = (N * kB * T) / V0
 
-    # # Volumen en el Cañón (Barril)
-    # Vb = A * (d + x)
+    # Volumen en el Cañón (Barril)
+    Vb = A * (d + x)
 
-    # # Presión en el Cañón (Barril)
-    # Pb = (Nb * kB * T) / Vb
+    # Presión en el Cañón (Barril)
+    Pb = (Nb * kB * T) / Vb
 
 
-###############################################################################################################
+#///////////////////////////////////////////////////////////////////////////////////////
     
     # 2. Calcular Flujo Q (dN/dt)
     Q = calcular_flujo_Q(P, Pb, r_max, Cv, T, Gg, Z, B)
@@ -266,7 +261,7 @@ def simulacion_rohrbach(P0):
     Ejecuta el modelo de Rohrbach para una presión inicial P0 y retorna la velocidad de salida.
     """
 
-###############################################################################################################
+#///////////////////////////////////////////////////////////////////////////////////////
     '''con vdw'''
     
 #     #N(0): Moléculas iniciales en el tanque (Ec. 9) **
@@ -280,7 +275,7 @@ def simulacion_rohrbach(P0):
 #     Nb0 = (A * d) / vb0
 
 
-###############################################################################################################
+#///////////////////////////////////////////////////////////////////////////////////////
 
     ''' con ideal gas'''
 
@@ -327,7 +322,7 @@ def simulacion_rohrbach(P0):
 
 # --- 5. El Problema Inverso (Búsqueda de P0) ---
 
-def busqueda_presion_inversa(v_deseada, P_min, P_max, tolerancia_v=0.1):
+def P_rohrbach(v_deseada, P_min, P_max, tolerancia_v=0.1):
     """
     Encuentra la presión inicial P0 (en kPa) necesaria para alcanzar v_deseada (m/s)
     utilizando el método de la Bisección.
@@ -351,27 +346,85 @@ def busqueda_presion_inversa(v_deseada, P_min, P_max, tolerancia_v=0.1):
 
     return P0_requerida
 
-# --- 6. Ejemplo de Uso ---
 
-# EJEMPLO: Quiero que el proyectil alcance 85 m/s.
-v_objetivo = 44.7 # m/s (aproximadamente 300 pies/s)
+####################################################################################################################################################################################################
+'''Adiabatic Expansion Model'''
+gamma = 1.4 # para aire
 
-# Definir un rango de búsqueda (Presiones en kPa)
-# Basado en la gráfica Fig. 3(a), la solución debería estar entre 400 y 600 kPa
-P_min = 150 *10**3 #[Pa]
-P_max = 800 *10**3 #[Pa]
+def P_adiabatic(V, P0, V0, gamma):
+    """Calcula la presión durante una expansión adiabática.
+    Args:
+        V (float): Volumen actual [m^3]
+        P0 (float): Presión inicial [Pa]
+        V0 (float): Volumen inicial [m^3]
+        gamma (float): Índice adiabático (Cp/Cv)
+    Returns:
+        P (float): Presión actual [Pa]
+    """
+    return (((V**2) + A*L*P_atm)*(gamma - 1)*m)/(2*V0*(1-(V0/(A*L + V0)**(gamma-1)))) #Pa
 
-print(f"Objetivo: Encontrar P0 para alcanzar {v_objetivo} m/s")
 
-P0_calculada = busqueda_presion_inversa(v_objetivo, P_min, P_max)
+####################################################################################################################################################################################################
 
-if P0_calculada is not None:
-    # Verificación final de la simulación
-    v_verificacion = simulacion_rohrbach(P0_calculada)
-    
+####################################################################################################################################################################################################
+'''Isotermic Expansion Model'''
+
+def P_isotermic(V, P0, V0):
+    """Calcula la presión durante una expansión isotérmica.
+    Args:
+        V (float): Volumen actual [m^3]
+        P0 (float): Presión inicial [Pa]
+        V0 (float): Volumen inicial [m^3]
+    Returns:
+        P (float): Presión actual [Pa]
+    """
+    return (((V)**2 + A*L*P_atm)*m)/(2*V0*np.log(1+(A*L/V0))) #Pa
+
+
+####################################################################################################################################################################################################
+
+
+def main(h):
+    vo = velocity(h, D, kmu, dragCoefficients, g, vs, m)
+    P_min = 150 *10**3 #[Pa]
+    P_max = 800 *10**3 #[Pa]
+
+    print(f"Objetivo: Encontrar P0 para alcanzar {vo} m/s")
+
+    P0R = P_rohrbach(vo, P_min, P_max)
+
+    if P0R is not None:
+        # Verificación final de la simulación
+        v_verificacion = simulacion_rohrbach(P0R)
+        
+        print("-" * 50)
+        print("RESULTADOS DEL MODELO INVERSO DE ROHRBACH:")
+        print(f"Velocidad Deseada: {vo:.2f} m/s")
+        print(f"Presión Inicial Requerida (abs) (P0): {P0R:.2f} Pa")
+        print(f"Presión Inicial Requerida (psig) (P0): {((P0R - P_atm) / 6895):.2f} psig")
+        print(f"Verificación de Velocidad (con P0 calculada): {v_verificacion:.2f} m/s")
+        print("-" * 50)
+
+    P0I = P_isotermic( vo, P_atm, V0)
+
     print("-" * 50)
-    print("RESULTADOS DEL MODELO INVERSO DE ROHRBACH:")
-    print(f"Velocidad Deseada: {v_objetivo:.2f} m/s")
-    print(f"Presión Inicial Requerida (P0): {P0_calculada:.2f} Pa")
-    print(f"Verificación de Velocidad (con P0 calculada): {v_verificacion:.2f} m/s")
+    print("RESULTADOS DEL MODELO ISOTERMICO:")
+    print(f"Velocidad Deseada: {vo:.2f} m/s")
+    print(f"Presión Inicial Requerida (abs) (P0): {P0R:.2f} Pa")
+    print(f"Presión Inicial Requerida (psig) (P0): {((P0R - P_atm) / 6895):.2f} psig")
     print("-" * 50)
+
+    P0Ad = P_adiabatic( vo, P_atm, V0, gamma)
+
+    print("-" * 50)
+    print("RESULTADOS DEL MODELO ADIABATICO:")
+    print(f"Velocidad Deseada: {vo:.2f} m/s")
+    print(f"Presión Inicial Requerida (abs) (P0): {P0R:.2f} Pa")
+    print(f"Presión Inicial Requerida (psig) (P0): {((P0R - P_atm) / 6895):.2f} psig")
+    print("-" * 50)
+
+
+
+main(h)
+
+
