@@ -52,71 +52,71 @@ def PVdW(T: float, N: float, V: float, R: float, b: float, a: float) -> float:
 
 """Kinematic Viscocity"""
 T = 298.15 #K
-#asumiremos T cst y ambiente o la medimos ese dia
-Mw= 29/1000 # kg/mol
-#L: longitud caracteristica = D
-#kinematic viscosity
-# To = 518.7 #R
-# mo = 3.62 * 10**-7 #lbs/ft**2
-# vs = VvdW(T, P_atm, b, R, a)
-# kmu = (mo * (((T*9/5)/To)**(1.5)*(To + 198.72)/((T*9/5) + 198.72))) * (6894.76) * (vs / Mw) #m**2/s
+'''asumiremos T cst y ambiente o la medimos ese dia'''
+Mw= 29/1000 # kg/mol 
+'''L: longitud caracteristica = D'''
+'''kinematic viscosity'''
+To = 291.15 #K
+mo = 18.27* 10**-6 #Pa*s
+vs = VvdW(T, P_atm, b, R, a)
+kmu = (mo * (((T/To)**(1.5))*((To + 120)/(T + 120)))) * (vs / Mw) #m**2/s #dynamic viscosity/density (vs= density^-1)
 
-# D = 7/100 #m
-# dragCoefficients: list[float] = []
-
-
-
-# def dragCoefficient(V, D, kmu, dragCoefficients: list[float]):
-#   """Drag Coefficient Calculator
-#   Args:      
-#       V (float): Velocity [m/s]
-#       D (float): Diameter [m]
-#       kmu (float): Kinematic Viscosity [m**2/s]
-#       dragCoefficients (list): List to append drag coefficients
-#   Returns:
-#       dragCoefficients (list): Updated list of drag coefficients      
-#     """
-#   Re = D*V/kmu #adimensional
-#   if Re < 10**3:
-#     dragCoefficients.append((12*Re**-5))  #en que unidades?? (Edwards et.al 2000)
-#   elif Re < 2* 10**5:
-#     dragCoefficients.append(((24/Re)*(1+0.15*Re**(0.687)) + (0.42/(1+42500/Re**1.16))))
-#   elif Re < 10**6:
-#     dragCoefficients.append(((24/Re)*(2.6*(Re/5))/(1+(Re/5)**1.52) + (0.411*(Re/263000)**-7.94)/(1+(Re/263000)**-8) + (Re**0.8/461000)))
-#   return dragCoefficients
+D = 7/100 #m
+dragCoefficients: list[float] = []
 
 
-# def terminalVelocity(dragCoefficients: list[float], m, g, vs, D):
-#   '''  Terminal Velocity Calculator
-#   Args:
-#       dragCoefficients (list): List of drag coefficients
-#       m (float): Mass of the projectile [kg]
-#       g (float): Gravitational acceleration [m/s**2]
-#       vs (float): Specific volume [m**3/mol]
-#       D (float): Diameter [m]
+
+def dragCoefficient(V, D, kmu, dragCoefficients: list[float]):
+  """Drag Coefficient Calculator
+  Args:      
+      V (float): Velocity [m/s]
+      D (float): Diameter [m]
+      kmu (float): Kinematic Viscosity [m**2/s]
+      dragCoefficients (list): List to append drag coefficients
+  Returns:
+      dragCoefficients (list): Updated list of drag coefficients      
+    """
+  Re = D*V/kmu #adimensional
+  if Re < 10**3:
+    dragCoefficients.append((12*Re**-5))  #en que unidades?? (Edwards et.al 2000)
+  elif Re < 2* 10**5:
+    dragCoefficients.append(((24/Re)*(1+0.15*Re**(0.687)) + (0.42/(1+42500/Re**1.16))))
+  elif Re < 10**6:
+    dragCoefficients.append(((24/Re)*(2.6*(Re/5))/(1+(Re/5)**1.52) + (0.411*(Re/263000)**-7.94)/(1+(Re/263000)**-8) + (Re**0.8/461000)))
+  return dragCoefficients
+
+
+def terminalVelocity(dragCoefficients: list[float], m, g, vs, D):
+  '''  Terminal Velocity Calculator
+  Args:
+      dragCoefficients (list): List of drag coefficients
+      m (float): Mass of the projectile [kg]
+      g (float): Gravitational acceleration [m/s**2]
+      vs (float): Specific volume [m**3/mol]
+      D (float): Diameter [m]
     
-#     Returns:
-#       vt (float): Terminal Velocity [m/s]'''
-# #   Cp = sum(dragCoefficients)/len(dragCoefficients) #con este no, no se porque, pero bueno, lueo lo resuelvo. 
-#   Cp = 0.5 #funciona con este, da resultados logicos
-#   return (2*m*g*vs/(Cp*Mw*(D/2)**2*np.pi))**0.5
+    Returns:
+      vt (float): Terminal Velocity [m/s]'''
+#   Cp = sum(dragCoefficients)/len(dragCoefficients) #con este no, no se porque, pero bueno, lueo lo resuelvo. 
+  Cp = 0.5 #funciona con este, da resultados logicos
+  return (2*m*g*vs/(Cp*Mw*(D/2)**2*np.pi))**0.5
 
-# # The function
-# def velocity(h, D, kmu, dragCoefficients: list[float], g, vs, m):
-#     vo = 20 #m/s
-#     dragCoefficient(vo, D, kmu, dragCoefficients)
-#     vt = terminalVelocity(dragCoefficients, m, g, vs, D)
-#     while abs((h - (-1*(vt**2)/g)*np.log(np.cos(np.arctan(vo/vt))))) > 5:
-#         vo += 1
-#         dragCoefficient(vo, D, kmu, dragCoefficients)
-#         vt = terminalVelocity(dragCoefficients, m, g, vs, D)
-#     while abs((h - (-1*(vt**2)/g)*np.log(np.cos(np.arctan(vo/vt))))) > 1:
-#         vo += 0.1
-#         dragCoefficient(vo, D, kmu, dragCoefficients)
-#         vt = terminalVelocity(dragCoefficients, m, g, vs, D)
-#     print(str(round(vo,2)) + " m/s")
+# The function
+def velocity(h, D, kmu, dragCoefficients: list[float], g, vs, m):
+    vo = 20 #m/s
+    dragCoefficient(vo, D, kmu, dragCoefficients)
+    vt = terminalVelocity(dragCoefficients, m, g, vs, D)
+    while abs((h - (-1*(vt**2)/g)*np.log(np.cos(np.arctan(vo/vt))))) > 5:
+        vo += 1
+        dragCoefficient(vo, D, kmu, dragCoefficients)
+        vt = terminalVelocity(dragCoefficients, m, g, vs, D)
+    while abs((h - (-1*(vt**2)/g)*np.log(np.cos(np.arctan(vo/vt))))) > 1:
+        vo += 0.1
+        dragCoefficient(vo, D, kmu, dragCoefficients)
+        vt = terminalVelocity(dragCoefficients, m, g, vs, D)
+    print(str(round(vo,2)) + " m/s")
 
-# velocity(h, D, kmu, dragCoefficients, g, vs, m)
+velocity(h, D, kmu, dragCoefficients, g, vs, m)
 
 
 # ############################################################################################################################################################################################################################################################################
@@ -278,7 +278,7 @@ def simulacion_rohrbach(P0):
 
     # Nb(0): Moléculas iniciales en el cañón (asumido a P_atm y volumen inicial A*d)
     Nb0 = (P_atm * A * d) / (kB * T)
-
+   
 
 ###############################################################################################################
 
