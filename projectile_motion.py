@@ -9,7 +9,7 @@ h = 60 #m
 # """Conditions"""
 R = 8.3145 #Pam**3/molK
 # m = 0.01940        # Masa del proyectil (kg) [cite: 160]
-m = (182)/1000 #kg (falta incluir peso de cinta adhesiva, y botella tapa de paracaidas) ****
+m = (141)/1000 #kg (falta incluir peso de cinta adhesiva, y botella tapa de paracaidas) ****
 g = 9.8 #m/s**2
 P_atm = 101325*0.89  # Presión atmosférica (Pa)
 
@@ -115,7 +115,7 @@ def velocity(h, D, kmu, dragCoefficients: list[float], g, vs, m):
     Returns:
         vo (float): Initial Velocity [m/s]'''
     
-
+    vo = 20.0 #m/s
     dragCoefficient(vo, D, kmu, dragCoefficients)
     vt = terminalVelocity(dragCoefficients, m, g, vs, D)
     while abs((h - (-1*(vt**2)/g)*np.log(np.cos(np.arctan(vo/vt))))) > 5:
