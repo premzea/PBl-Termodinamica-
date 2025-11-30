@@ -3,12 +3,13 @@ from scipy.integrate import odeint
 from scipy.integrate import solve_ivp
 import matplotlib.pyplot as plt
 from scipy.optimize import bisect
+from scipy.optimize import root_scalar
 
-h = 52 #m
+h = 60 #m
 # """Conditions"""
 R = 8.3145 #Pam**3/molK
 # m = 0.01940        # Masa del proyectil (kg) [cite: 160]
-m = (92)/1000 #kg (falta incluir peso de cinta adhesiva, y botella tapa de paracaidas) ****
+m = (182)/1000 #kg (falta incluir peso de cinta adhesiva, y botella tapa de paracaidas) ****
 g = 9.8 #m/s**2
 P_atm = 101325*0.89  # Presión atmosférica (Pa)
 
@@ -59,7 +60,7 @@ Mw= 29/1000 # kg/mol
 To = 291.15 #K
 mo = 18.27* 10**-6 #Pa*s
 vs = VvdW(T, P_atm, b, R, a)
-kmu = (mo * (((T/To)**(1.5))*((To + 120)/(T + 120)))) * (vs / Mw) #m**2/s #dynamic viscosity/density (vs= density^-1)
+kmu = (mo * (((T/To)**(1.5))*((To + 120)/(T + 120)))) * (vs / Mw) #m**2/s #dynamic viscosity/density (vs= density^-1) 
 
 D = 7/100 #m (en realidad es otro el diametro, ahora lo mido) ****
 dragCoefficients: list[float] = []
@@ -113,7 +114,8 @@ def velocity(h, D, kmu, dragCoefficients: list[float], g, vs, m):
         m (float): Mass of the projectile [kg]
     Returns:
         vo (float): Initial Velocity [m/s]'''
-    vo = 20 #m/s
+    
+
     dragCoefficient(vo, D, kmu, dragCoefficients)
     vt = terminalVelocity(dragCoefficients, m, g, vs, D)
     while abs((h - (-1*(vt**2)/g)*np.log(np.cos(np.arctan(vo/vt))))) > 5:
@@ -124,9 +126,9 @@ def velocity(h, D, kmu, dragCoefficients: list[float], g, vs, m):
         vo += 0.1
         dragCoefficient(vo, D, kmu, dragCoefficients)
         vt = terminalVelocity(dragCoefficients, m, g, vs, D)
-    print(str(round(vo,2)) + " m/s")
+    return vo
 
-velocity(h, D, kmu, dragCoefficients, g, vs, m)
+    #seria interesante ponerle el root scalar, pero no sabria que hacer con los dragCoefficients, and if it works, dont fix it, u know?
 
 
 ############################################################################################################################################################################################################################################################################
@@ -138,18 +140,17 @@ velocity(h, D, kmu, dragCoefficients, g, vs, m)
 # print('radius = ' + str(r) + ' m')
 
 ##############################################################################################################################################################################################################################
+
 '''Rohrbach Model'''
 
 # Parámetros Universales y del Gas (Sistema Internacional: SI)
 kB = 1.380649e-23  # Constante de Boltzmann (J/K)
-P_atm = 101325*0.89     # Presión atmosférica (Pa)
 T = 298.15            # Temperatura del depósito (K), asumida constante [cite: 100] **
 Gg = 1             # Gravedad específica del aire [cite: 100]
 Z = 1              # Factor de compresibilidad [cite: 100]
 B = 3.11e19        # Constante de ingeniería B (unidades ajustadas en SI) [cite: 102]
 
 # Parámetros Físicos y Empíricos del Cañón de Rohrbach et al. (en SI)
-m = (67+52)/1000        # Masa del proyectil (kg) [cite: 160] **
 D = 7.62/100        # Diámetro del cañón (m) [cite: 109] **
 A = np.pi*(D/2)**2 # Área transversal del cañón (m^2)
 L = 46/100         # Longitud del cañón para la aceleración (m) [cite: 164] **
@@ -159,7 +160,12 @@ d = 0.1           # Distancia inicial del proyectil a la válvula (m), asumido. 
 
 # Parámetros Empíricos de la Válvula Calibrada
 r_max = 0.80       # Relación de presión crítica (adimensional) [cite: 170]
-Cv = 480          # Coeficiente de flujo de la válvula (adimensional) [cite: 170] **
+# Cv = 480          # Coeficiente de flujo de la válvula (adimensional) [cite: 170] ** (adimensional? segun ariticulo si)
+Cv = 1.93  # Coeficiente de flujo de la válvula (adimensional) [cite: 170] (no me da con esto)
+#por analisis dimensional de las formulas de Q, esto deberia ser m^3
+#pero, entonces, no tiene el sentido normal de las otras Cv que encuentro en linea, 
+# y tambien eso implica que Q esta en m^3/s, lo cual no tiene sentido con lo de dN/dt -_- no entiendo nada
+#Y dicen que es adimensional en el articulo -_- pero no da.
 
 # --- 2. Funciones de Flujo (Q) y Presión ---
 
@@ -286,7 +292,7 @@ def simulacion_rohrbach(P0):
     Nb0 = (P_atm * A * d) / (kB * T)
    
 
-###############################################################################################################
+#///////////////////////////////////////////////////////////////////////////////////////
 
     
     # Vector de estado inicial: y0 = [x0, v0, N0, Nb0]
@@ -309,7 +315,7 @@ def simulacion_rohrbach(P0):
         dense_output=True,
         rtol=1e-6, # Tolerancia relativa
         atol=1e-9  # Tolerancia absoluta
-    )
+        )
 
     # Si el evento de salida se activó, la velocidad es la última calculada
     if sol.y_events[0].size > 0:
@@ -361,7 +367,7 @@ def P_adiabatic(V, P0, V0, gamma):
     Returns:
         P (float): Presión actual [Pa]
     """
-    return (((V**2) + A*L*P_atm)*(gamma - 1)*m)/(2*V0*(1-(V0/(A*L + V0)**(gamma-1)))) #Pa
+    return ((V**2 + A*L*P_atm)*(gamma - 1)*m)/(2*V0*(1-(V0/(A*L + V0))**(gamma-1))) #Pa
 
 
 ####################################################################################################################################################################################################
@@ -378,7 +384,36 @@ def P_isotermic(V, P0, V0):
     Returns:
         P (float): Presión actual [Pa]
     """
-    return (((V)**2 + A*L*P_atm)*m)/(2*V0*np.log(1+(A*L/V0))) #Pa
+    return ((V**2 + A*L*P_atm)*m)/(2*V0*np.log(1+(A*L/V0))) #Pa
+
+
+####################################################################################################################################################################################################
+
+####################################################################################################################################################################################################
+'''Adibatic Work Model'''
+
+def W_adiabatic(V0, V, gamma):
+    """Calcula el trabajo realizado durante una expansión adiabática.
+    Args:
+        P0 (float): Presión inicial [Pa]
+        V0 (float): Volumen inicial [m^3]
+        V (float): Volumen actual [m^3] """
+    P0 = P_atm
+    gamma = 1.4
+    Ek = m*(V0**2)/2
+
+    def f(P0):
+        W = (   P0 * V0 / (gamma - 1)) * (1 - (P_atm/P0)**((gamma - 1)/gamma))
+        return Ek - W
+
+    # Choose a bracket that makes physical sense
+    sol = root_scalar(f, bracket=[P_atm, 200*P_atm], method='brentq')
+
+    if not sol.converged:
+        raise RuntimeError("Failed to find a physical pressure.")
+
+    return sol.root
+
 
 
 ####################################################################################################################################################################################################
@@ -387,9 +422,9 @@ def P_isotermic(V, P0, V0):
 def main(h):
     vo = velocity(h, D, kmu, dragCoefficients, g, vs, m)
     P_min = 150 *10**3 #[Pa]
-    P_max = 800 *10**3 #[Pa]
+    P_max = 10000 *10**3 #[Pa]
 
-    print(f"Objetivo: Encontrar P0 para alcanzar {vo} m/s")
+    print(f"Objetivo: Encontrar P0 para alcanzar {vo:.2f} m/s")
 
     P0R = P_rohrbach(vo, P_min, P_max)
 
@@ -410,8 +445,8 @@ def main(h):
     print("-" * 50)
     print("RESULTADOS DEL MODELO ISOTERMICO:")
     print(f"Velocidad Deseada: {vo:.2f} m/s")
-    print(f"Presión Inicial Requerida (abs) (P0): {P0R:.2f} Pa")
-    print(f"Presión Inicial Requerida (psig) (P0): {((P0R - P_atm) / 6895):.2f} psig")
+    print(f"Presión Inicial Requerida (abs) (P0): {P0I:.2f} Pa")
+    print(f"Presión Inicial Requerida (psig) (P0): {((P0I - P_atm) / 6895):.2f} psig")
     print("-" * 50)
 
     P0Ad = P_adiabatic( vo, P_atm, V0, gamma)
@@ -419,9 +454,20 @@ def main(h):
     print("-" * 50)
     print("RESULTADOS DEL MODELO ADIABATICO:")
     print(f"Velocidad Deseada: {vo:.2f} m/s")
-    print(f"Presión Inicial Requerida (abs) (P0): {P0R:.2f} Pa")
-    print(f"Presión Inicial Requerida (psig) (P0): {((P0R - P_atm) / 6895):.2f} psig")
+    print(f"Presión Inicial Requerida (abs) (P0): {P0Ad:.2f} Pa")
+    print(f"Presión Inicial Requerida (psig) (P0): {((P0Ad - P_atm) / 6895):.2f} psig")
     print("-" * 50)
+
+
+    P0WAd = W_adiabatic( vo, P_atm, V0)
+
+    print("-" * 50)
+    print("RESULTADOS DEL MODELO SEGUN EL TRABAJO ADIABATICO:")
+    print(f"Velocidad Deseada: {vo:.2f} m/s")
+    print(f"Presión Inicial Requerida (abs) (P0): {P0WAd:.2f} Pa")
+    print(f"Presión Inicial Requerida (psig) (P0): {((P0WAd - P_atm) / 6895):.2f} psig")
+    print("-" * 50)
+
 
 
 
