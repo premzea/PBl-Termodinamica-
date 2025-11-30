@@ -160,8 +160,9 @@ d = 0.1           # Distancia inicial del proyectil a la válvula (m), asumido. 
 
 # Parámetros Empíricos de la Válvula Calibrada
 r_max = 0.80       # Relación de presión crítica (adimensional) [cite: 170]
-# Cv = 480          # Coeficiente de flujo de la válvula (adimensional) [cite: 170] ** (adimensional? segun ariticulo si)
-Cv = 1.93  # Coeficiente de flujo de la válvula (adimensional) [cite: 170] (no me da con esto)
+Cv = 480          # Coeficiente de flujo de la válvula (adimensional) [cite: 170] ** (adimensional? segun ariticulo si)
+# Cv = 1.93  # Coeficiente de flujo de la válvula (adimensional) [cite: 170] 
+
 #por analisis dimensional de las formulas de Q, esto deberia ser m^3
 #pero, entonces, no tiene el sentido normal de las otras Cv que encuentro en linea, 
 # y tambien eso implica que Q esta en m^3/s, lo cual no tiene sentido con lo de dN/dt -_- no entiendo nada
@@ -357,7 +358,7 @@ def P_rohrbach(v_deseada, P_min, P_max, tolerancia_v=0.1):
 '''Adiabatic Expansion Model'''
 gamma = 1.4 # para aire
 
-def P_adiabatic(V, P0, V0, gamma):
+def P_adiabatic(V):
     """Calcula la presión durante una expansión adiabática.
     Args:
         V (float): Volumen actual [m^3]
@@ -367,7 +368,7 @@ def P_adiabatic(V, P0, V0, gamma):
     Returns:
         P (float): Presión actual [Pa]
     """
-    return ((V**2 + A*L*P_atm)*(gamma - 1)*m)/(2*V0*(1-(V0/(A*L + V0))**(gamma-1))) #Pa
+    return (((m/2)*(V**2) + A*L*P_atm)*(gamma - 1))/(V0*(1-(V0/(A*L + V0))**(gamma-1))) #Pa
 
 
 ####################################################################################################################################################################################################
@@ -375,7 +376,7 @@ def P_adiabatic(V, P0, V0, gamma):
 ####################################################################################################################################################################################################
 '''Isotermic Expansion Model'''
 
-def P_isotermic(V, P0, V0):
+def P_isotermic(V):
     """Calcula la presión durante una expansión isotérmica.
     Args:
         V (float): Volumen actual [m^3]
@@ -384,7 +385,7 @@ def P_isotermic(V, P0, V0):
     Returns:
         P (float): Presión actual [Pa]
     """
-    return ((V**2 + A*L*P_atm)*m)/(2*V0*np.log(1+(A*L/V0))) #Pa
+    return (((m/2)*(V**2) + A*L*P_atm))/(V0*np.log(1+(A*L/V0))) #Pa
 
 
 ####################################################################################################################################################################################################
@@ -392,18 +393,17 @@ def P_isotermic(V, P0, V0):
 ####################################################################################################################################################################################################
 '''Adibatic Work Model'''
 
-def W_adiabatic(V0, V, gamma):
+def W_adiabatic(V):
     """Calcula el trabajo realizado durante una expansión adiabática.
     Args:
         P0 (float): Presión inicial [Pa]
         V0 (float): Volumen inicial [m^3]
         V (float): Volumen actual [m^3] """
     P0 = P_atm
-    gamma = 1.4
-    Ek = m*(V0**2)/2
+    Ek = m*(V**2)/2
 
     def f(P0):
-        W = (   P0 * V0 / (gamma - 1)) * (1 - (P_atm/P0)**((gamma - 1)/gamma))
+        W = ((P0 * V0)/(gamma - 1)) * (1 - (P_atm/P0)**((gamma - 1)/gamma))
         return Ek - W
 
     # Choose a bracket that makes physical sense
@@ -440,7 +440,7 @@ def main(h):
         print(f"Verificación de Velocidad (con P0 calculada): {v_verificacion:.2f} m/s")
         print("-" * 50)
 
-    P0I = P_isotermic( vo, P_atm, V0)
+    P0I = P_isotermic(vo)
 
     print("-" * 50)
     print("RESULTADOS DEL MODELO ISOTERMICO:")
@@ -449,7 +449,7 @@ def main(h):
     print(f"Presión Inicial Requerida (psig) (P0): {((P0I - P_atm) / 6895):.2f} psig")
     print("-" * 50)
 
-    P0Ad = P_adiabatic( vo, P_atm, V0, gamma)
+    P0Ad = P_adiabatic(vo)
 
     print("-" * 50)
     print("RESULTADOS DEL MODELO ADIABATICO:")
@@ -459,7 +459,7 @@ def main(h):
     print("-" * 50)
 
 
-    P0WAd = W_adiabatic( vo, P_atm, V0)
+    P0WAd = W_adiabatic(vo)
 
     print("-" * 50)
     print("RESULTADOS DEL MODELO SEGUN EL TRABAJO ADIABATICO:")
@@ -467,8 +467,6 @@ def main(h):
     print(f"Presión Inicial Requerida (abs) (P0): {P0WAd:.2f} Pa")
     print(f"Presión Inicial Requerida (psig) (P0): {((P0WAd - P_atm) / 6895):.2f} psig")
     print("-" * 50)
-
-
 
 
 main(h)
