@@ -4,6 +4,7 @@ from scipy.integrate import solve_ivp
 import matplotlib.pyplot as plt
 from scipy.optimize import bisect
 from scipy.optimize import root_scalar
+from scipy.optimize import least_squares
 
 h = 60 #m
 # """Conditions"""
@@ -115,7 +116,7 @@ def velocity(h, D, kmu, dragCoefficients: list[float], g, vs, m):
     Returns:
         vo (float): Initial Velocity [m/s]'''
     
-    vo = 20.0 #m/s
+    vo = 1 #m/s
     dragCoefficient(vo, D, kmu, dragCoefficients)
     vt = terminalVelocity(dragCoefficients, m, g, vs, D)
     while abs((h - (-1*(vt**2)/g)*np.log(np.cos(np.arctan(vo/vt))))) > 5:
@@ -151,17 +152,17 @@ Z = 1              # Factor de compresibilidad [cite: 100]
 B = 3.11e19        # Constante de ingeniería B (unidades ajustadas en SI) [cite: 102]
 
 # Parámetros Físicos y Empíricos del Cañón de Rohrbach et al. (en SI)
-D = 7.62/100        # Diámetro del cañón (m) [cite: 109] **
-A = np.pi*(D/2)**2 # Área transversal del cañón (m^2)
+Dc = 7.62/100        # Diámetro del cañón (m) [cite: 109] **
+A = np.pi*(Dc/2)**2 # Área transversal del cañón (m^2)
 L = 46/100         # Longitud del cañón para la aceleración (m) [cite: 164] **
-V0 = 0.0067      # Volumen del depósito (m^3) [cite: 108] **
+V0 = 0.00405      # Volumen del depósito (m^3) [cite: 108] **
 f = 0              # Fricción (N), asumida despreciable [cite: 172] 
 d = 0.1           # Distancia inicial del proyectil a la válvula (m), asumido. **
 
 # Parámetros Empíricos de la Válvula Calibrada
-r_max = 0.80       # Relación de presión crítica (adimensional) [cite: 170]
-Cv = 480          # Coeficiente de flujo de la válvula (adimensional) [cite: 170] ** (adimensional? segun ariticulo si)
-# Cv = 1.93  # Coeficiente de flujo de la válvula (adimensional) [cite: 170] 
+r_max = 0.2      # Relación de presión crítica (adimensional) [cite: 170]
+# Cv = 480          # Coeficiente de flujo de la válvula (adimensional) [cite: 170] ** (adimensional? segun ariticulo si)
+Cv = 1.93  # Coeficiente de flujo de la válvula (adimensional) [cite: 170] 
 
 #por analisis dimensional de las formulas de Q, esto deberia ser m^3
 #pero, entonces, no tiene el sentido normal de las otras Cv que encuentro en linea, 
@@ -196,7 +197,7 @@ def calcular_flujo_Q(P, Pb, r_max, Cv, T, Gg, Z, B):
 
 # --- 3. El Sistema de Ecuaciones Diferenciales (Forward Model) ---
 
-def sistema_rohrbach(t, y):
+def sistema_rohrbach(t, y, Cv, r_max):
     """
     Define el sistema de Ecuaciones Diferenciales Ordinarias (ODEs).
     y = [x, v, N, Nb]
@@ -263,7 +264,7 @@ def sistema_rohrbach(t, y):
 
 # --- 4. La Función de Simulación (SIMULACION(P0)) ---
 
-def simulacion_rohrbach(P0):
+def simulacion_rohrbach(P0, Cv, r_max):
     """
     Ejecuta el modelo de Rohrbach para una presión inicial P0 y retorna la velocidad de salida.
     """
@@ -300,7 +301,7 @@ def simulacion_rohrbach(P0):
     y0 = [0.0, 0.0, N0, Nb0]
     
     # Condición de finalización (cuando el proyectil alcanza L)
-    def evento_salida(t, y):
+    def evento_salida(t, y, Cv, r_max):
         return y[0] - L # Se detiene cuando x - L = 0
     evento_salida.terminal = True
     evento_salida.direction = 1 # Evento solo se activa cuando x está creciendo
@@ -314,6 +315,7 @@ def simulacion_rohrbach(P0):
         method='RK45', 
         events=evento_salida, 
         dense_output=True,
+        args=(Cv, r_max),
         rtol=1e-6, # Tolerancia relativa
         atol=1e-9  # Tolerancia absoluta
         )
@@ -329,19 +331,19 @@ def simulacion_rohrbach(P0):
 
 # --- 5. El Problema Inverso (Búsqueda de P0) ---
 
-def P_rohrbach(v_deseada, P_min, P_max, tolerancia_v=0.1):
+def P_rohrbach(v_deseada, P_min, P_max, Cv, r_max, tolerancia_v=0.1):
     """
     Encuentra la presión inicial P0 (en kPa) necesaria para alcanzar v_deseada (m/s)
     utilizando el método de la Bisección.
     """
     
     # Definir la función de error (el objetivo es que sea cero)
-    def funcion_error(P0):
-        v_predicha = simulacion_rohrbach(P0)
+    def funcion_error(P0, Cv, r_max):
+        v_predicha = simulacion_rohrbach(P0, Cv, r_max)
         return v_predicha - v_deseada
 
     # Se verifica que el intervalo [P_min, P_max] encierra la raíz
-    if funcion_error(P_min) * funcion_error(P_max) > 0:
+    if funcion_error(P_min, Cv, r_max) * funcion_error(P_max, Cv, r_max) > 0:
         # Se necesita un intervalo que contenga la solución
         print(f"Error: La velocidad deseada {v_deseada:.1f} m/s no está contenida")
         print(f"en el rango de presiones iniciales [{P_min}, {P_max}] Pa.")
@@ -349,9 +351,81 @@ def P_rohrbach(v_deseada, P_min, P_max, tolerancia_v=0.1):
         return None
         
     # Usar el método de bisección para encontrar la raíz (P0)
-    P0_requerida = bisect(funcion_error, P_min, P_max, xtol=0.01)
+    P0_requerida = bisect(funcion_error, P_min, P_max, args=(Cv, r_max), xtol=0.01)
 
     return P0_requerida
+####################################################################################################################################################################################################
+'''Parameter Optimization using Least Squares for Rohrbach Model'''
+
+
+# # 1. Función para calcular un solo residuo
+def calcular_residuo(parametros_ajustar, P_datos, V_datos):
+    """
+    Calcula el vector de residuos (Error Global) para todos los datos.
+    
+    parametros_ajustar = [r_max, Cv]
+    P_datos = Vector de presiones iniciales medidas.
+    V_datos = Vector de velocidades medidas.
+    """
+    r_max_opt, Cv_opt = parametros_ajustar
+    
+    # Vector para almacenar los errores de cada punto
+    errores = []
+
+    # Iterar sobre cada punto de datos (P_inicial, V_medida)
+    for P0, v_deseada in zip(P_datos, V_datos):
+        
+        # ⚠️ IMPORTANTE: TU FUNCIÓN SIMULACION_ROHRBACH DEBE SER MODIFICADA
+        # para que acepte r_max y Cv como argumentos, ya que son variables globales
+        # en el código original, pero deben ser parámetros aquí.
+        
+        # Simulamos la velocidad para la P0 dada, usando los parámetros de optimización
+        # (Asumiendo que has modificado simulacion_rohrbach para aceptar r_max y Cv)
+        v_predicha = simulacion_rohrbach(P0, r_max_opt, Cv_opt) 
+        
+        # El residuo es la diferencia
+        error = v_predicha - v_deseada
+        errores.append(error)
+        
+    # least_squares intenta minimizar la suma de los cuadrados de estos residuos.
+    return np.array(errores)
+
+
+# --- Valores de Ejemplo (DEBES USAR TUS DATOS REALES) ---
+P_medidos = np.array([503864.25, 641759.25, 779654.25]) # Pa
+
+
+V_medidos = np.array([45.36, 94.5, 31.5])      # m/s
+
+# --- Optimización de Parámetros ---
+
+# 3. Definir la Estimación Inicial (Guess)
+# Esto es crucial. Si el guess es malo, el optimizador puede fallar.
+# Usa los valores que tenías en tu código original como punto de partida.
+r_max_inicial = 0.2
+Cv_inicial = 1.93
+x0 = np.array([r_max_inicial, Cv_inicial])
+
+# 4. Definir Límites (Boundaries)
+# r_max debe estar entre 0 y 1. Cv debe ser positivo.
+limites = ([0.0, 1.0], [1, 480]) # [r_max_min, Cv_min], [r_max_max, Cv_max]
+
+# 5. Ejecutar el Optimizador
+resultado = least_squares(
+    calcular_residuo, # Función a minimizar
+    x0,               # Estimación inicial
+    args=(P_medidos, V_medidos), # Datos fijos pasados a la función de residuo
+    bounds=limites    # Restricciones de los parámetros
+)
+
+# El resultado óptimo está en el atributo 'x'
+r_max_optimo, Cv_optimo = resultado.x
+
+# Imprimir Resultados
+print("--- Resultado de la Optimización ---")
+print(f"r_max (óptimo): {r_max_optimo:.4f}")
+print(f"Cv (óptimo): {Cv_optimo:.2f}")
+print(f"Costo final (suma de residuos cuadrados): {resultado.cost:.2e}")
 
 
 ####################################################################################################################################################################################################
@@ -426,11 +500,11 @@ def main(h):
 
     print(f"Objetivo: Encontrar P0 para alcanzar {vo:.2f} m/s")
 
-    P0R = P_rohrbach(vo, P_min, P_max)
+    P0R = P_rohrbach(vo, P_min, P_max, Cv, r_max)
 
     if P0R is not None:
         # Verificación final de la simulación
-        v_verificacion = simulacion_rohrbach(P0R)
+        v_verificacion = simulacion_rohrbach(P0R, Cv, r_max)
         
         print("-" * 50)
         print("RESULTADOS DEL MODELO INVERSO DE ROHRBACH:")
@@ -467,6 +541,8 @@ def main(h):
     print(f"Presión Inicial Requerida (abs) (P0): {P0WAd:.2f} Pa")
     print(f"Presión Inicial Requerida (psig) (P0): {((P0WAd - P_atm) / 6895):.2f} psig")
     print("-" * 50)
+
+
 
 
 main(h)
